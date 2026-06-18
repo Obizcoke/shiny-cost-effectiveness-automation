@@ -523,8 +523,9 @@ mod_synthesis_server <- function(id, factors, interventions,
                 "</div>",
                 "</div>"
               )
-              tags$span(
-                class = "synth-icer-info",
+              tags$a(
+                href = "javascript:void(0)",
+                style = "font-size:11px; font-weight:600; text-decoration:underline; cursor:pointer;",
                 `data-toggle` = "popover",
                 `data-trigger` = "click",
                 `data-placement` = "left",
