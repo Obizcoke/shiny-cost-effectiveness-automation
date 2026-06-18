@@ -147,9 +147,18 @@ synth_standardize <- function(study_row, factors, target_year = TARGET_YEAR) {
   fx_year    <- as.integer(format(factors$fx$date, "%Y"))
 
   # ── Resolve study country and its own currency ──────────────────────────────
-  study_iso3c <- countrycode::countrycode(as.character(study_row$country)[1L],
+  country_raw <- as.character(study_row$country)[1L]
+  study_iso3c <- countrycode::countrycode(country_raw,
                                            origin = "country.name",
                                            destination = "iso3c", warn = FALSE)
+  # Fall back to treating the value as an ISO3C code directly (e.g. "GHA", "KEN")
+  if (is.na(study_iso3c)) {
+    candidate <- toupper(trimws(country_raw))
+    if (nchar(candidate) == 3L &&
+        !is.null(countrycode::countrycode(candidate, origin = "iso3c",
+                                          destination = "iso3c", warn = FALSE)))
+      study_iso3c <- candidate
+  }
 
   country_currency <- NA_character_
   if (!is.na(study_iso3c) && study_iso3c %in% names(factors$iso3c_currency_map))
