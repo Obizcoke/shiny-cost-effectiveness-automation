@@ -14,6 +14,11 @@ mod_input_ui <- function(id) {
       }
       .anl-pg-hdr h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
       .anl-pg-hdr p  { font-size: 14px; color: #737373; margin: 0; }
+      .anl-intv-badge {
+        display: inline-block; background: #dff3fb; color: #1c8ec0;
+        font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px;
+        margin: 2px 0 6px;
+      }
 
       .anl-card-hdr {
         display: flex; align-items: center; justify-content: space-between;
@@ -51,6 +56,7 @@ mod_input_ui <- function(id) {
 
       div(class = "anl-pg-hdr",
         tags$h1("Cost-Effectiveness Analysis"),
+        uiOutput(ns("intervention_badge")),
         tags$p("Review strategies from Evidence Synthesis, set parameters, then run analysis.")
       ),
 
@@ -119,15 +125,23 @@ mod_input_server <- function(id, inject_strategies = NULL) {
 
     values <- reactiveValues(
       strategies_data = data.frame(
-        strategy  = c("Status Quo", "Intervention"),
-        cost      = c(100000, 250000),
-        effect    = c(10.0,   16.0),
-        source    = c("manual", "manual"),
-        n_studies = c(NA_integer_, NA_integer_),
+        strategy     = c("Status Quo", "Intervention"),
+        cost         = c(100000, 250000),
+        effect       = c(10.0,   16.0),
+        source       = c("manual", "manual"),
+        n_studies    = c(NA_integer_, NA_integer_),
+        intervention = c(NA_character_, NA_character_),
         stringsAsFactors = FALSE
       ),
       from_synthesis = FALSE
     )
+
+    output$intervention_badge <- renderUI({
+      sd <- values$strategies_data
+      intv <- unique(sd$intervention[!is.na(sd$intervention) & sd$intervention != ""])
+      if (length(intv) == 0L) return(NULL)
+      tags$span(class = "anl-intv-badge", intv[1])
+    })
 
     # ── Outcome-reactive threshold UI ─────────────────────────────────────
     output$threshold_ui <- renderUI({
@@ -164,11 +178,12 @@ mod_input_server <- function(id, inject_strategies = NULL) {
         d <- inject_strategies()
         if (is.null(d) || nrow(d) == 0L) return()
         values$strategies_data <- data.frame(
-          strategy  = d$strategy,
-          cost      = d$cost,
-          effect    = d$effect,
-          source    = d$source,
-          n_studies = d$n_studies,
+          strategy     = d$strategy,
+          cost         = d$cost,
+          effect       = d$effect,
+          source       = d$source,
+          n_studies    = d$n_studies,
+          intervention = d$intervention %||% NA_character_,
           stringsAsFactors = FALSE
         )
         values$from_synthesis <- TRUE
@@ -277,10 +292,11 @@ mod_input_server <- function(id, inject_strategies = NULL) {
     # ── Row add / remove ───────────────────────────────────────────────────
     observeEvent(input$add_row, {
       new_row <- data.frame(
-        strategy  = paste0("Strategy ", nrow(values$strategies_data) + 1L),
+        strategy     = paste0("Strategy ", nrow(values$strategies_data) + 1L),
         cost = 0, effect = 0,
-        source    = "manual",
-        n_studies = NA_integer_,
+        source       = "manual",
+        n_studies    = NA_integer_,
+        intervention = NA_character_,
         stringsAsFactors = FALSE
       )
       values$strategies_data <- rbind(values$strategies_data, new_row)
@@ -296,8 +312,9 @@ mod_input_server <- function(id, inject_strategies = NULL) {
 
     observeEvent(input$load_sample, {
       s <- create_sample_data()
-      s$source    <- "manual"
-      s$n_studies <- NA_integer_
+      s$source       <- "manual"
+      s$n_studies    <- NA_integer_
+      s$intervention <- NA_character_
       values$strategies_data <- s
       values$from_synthesis  <- FALSE
     })

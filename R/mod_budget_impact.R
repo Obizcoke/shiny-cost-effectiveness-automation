@@ -33,6 +33,11 @@ mod_budget_impact_ui <- function(id) {
       .bia-fld-lbl:first-child { margin-top: 0; }
       .bia-helper-note { font-size: 12px; color: #a3a3a3; margin: 4px 0 0; }
       .bia-save-status { font-size: 11px; color: #497048; margin: 6px 0 0; }
+      .bia-intv-badge {
+        display: inline-block; background: #dff3fb; color: #1c8ec0;
+        font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px;
+        margin: 2px 0 6px;
+      }
 
       .bia-grid {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -51,6 +56,7 @@ mod_budget_impact_ui <- function(id) {
 
       div(class = "bia-pg-hdr",
         tags$h1("Budget Impact"),
+        uiOutput(ns("intervention_badge")),
         tags$p("Estimate the budget required to deliver each strategy to the target population over time, based on the per-strategy costs from the Analysis tab.")
       ),
 
@@ -77,6 +83,13 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
       df[order(df$cost), ]
     })
 
+    output$intervention_badge <- renderUI({
+      sd <- strategies_data()
+      intv <- unique(sd$intervention[!is.na(sd$intervention) & sd$intervention != ""])
+      if (length(intv) == 0L) return(NULL)
+      tags$span(class = "bia-intv-badge", intv[1])
+    })
+
     # ── Empty state ──────────────────────────────────────────────────────────
     output$empty_state <- renderUI({
       if (!is.null(results())) return(NULL)
@@ -93,10 +106,11 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
       if (length(non_ref) == 0L || n_years < 1L) {
         return(data.frame(strategy = character(0)))
       }
+      even_share <- 1 / length(non_ref)
       cols <- lapply(seq_len(n_years), function(y) {
         vapply(non_ref, function(s) {
           v <- ramp$shares[[paste0(s, "_year_", y)]]
-          if (is.null(v) || is.na(v)) 1 else v
+          if (is.null(v) || is.na(v)) even_share else v
         }, numeric(1))
       })
       names(cols) <- paste0("year_", seq_len(n_years))
@@ -111,10 +125,20 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
     })
 
     # ── Body (everything that needs a completed analysis) ───────────────────
-    output$body_ui <- renderUI({
-      req(results())
+    # Built once, the first time results() becomes available, and never torn
+    # down again — re-rendering this on every new analysis run (e.g. trying
+    # a different intervention) would recreate target_population/time_horizon
+    # as fresh numericInputs, silently resetting them to their value=0/2
+    # defaults and zeroing out every Budget Impact figure underneath the user.
+    body_built <- reactiveVal(FALSE)
 
-      tagList(
+    observeEvent(results(), {
+      req(results())
+      if (isTRUE(body_built())) return()
+      body_built(TRUE)
+
+      output$body_ui <- renderUI({
+        tagList(
         fluidRow(
           column(4,
             div(class = "card",
@@ -177,7 +201,8 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
           )
         )
       )
-    })
+      })
+    }, ignoreNULL = TRUE)
 
     # ── Uptake ramp table ────────────────────────────────────────────────────
     # ramp_redraw forces output$ramp_table to re-render after a rejected edit
@@ -348,8 +373,12 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
       cost_source <- sd$source[match(rows$strategy, sd$strategy)]
       cost_source[is.na(cost_source)] <- "manual"
 
+      intervention_name <- unique(sd$intervention[!is.na(sd$intervention)])
+      intervention_name <- if (length(intervention_name) >= 1L) intervention_name[1L] else NA_character_
+
       rows_df <- data.frame(
         run_label           = input$run_label %||% "",
+        intervention        = intervention_name,
         year                = rows$year,
         strategy            = rows$strategy,
         is_reference        = rows$is_reference,
@@ -409,11 +438,13 @@ mod_budget_impact_server <- function(id, results, strategies_data) {
       # run's total — take the max-year row rather than aggregating, since
       # cumulative impact need not be monotonic (e.g. cost-saving strategies).
       d <- d[order(d$run_id, -d$year), ]
-      agg <- d[!duplicated(d$run_id), c("run_id", "run_label", "submitted_at", "cumulative_budget_impact")]
+      agg <- d[!duplicated(d$run_id),
+               c("run_id", "run_label", "intervention", "submitted_at", "cumulative_budget_impact")]
       agg <- agg[order(agg$submitted_at, decreasing = TRUE), ]
 
       display <- data.frame(
         `Run label` = agg$run_label,
+        `Intervention` = ifelse(is.na(agg$intervention) | agg$intervention == "", "—", agg$intervention),
         `Cumulative impact (KES)` = agg$cumulative_budget_impact,
         `Saved at` = agg$submitted_at,
         check.names = FALSE, stringsAsFactors = FALSE

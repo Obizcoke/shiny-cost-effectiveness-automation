@@ -28,7 +28,7 @@ STUDIES_COLS <- c(
 # Column schema for the Budget Impact Runs sheet — one row per (run, year,
 # strategy); lives in the same spreadsheet as the studies sheet (STUDIES_ID).
 BIA_COLS <- c(
-  "run_id", "run_label", "year",
+  "run_id", "run_label", "intervention", "year",
   "strategy", "is_reference", "cost_per_case", "cost_source",
   "target_population", "uptake_share",
   "reference_total", "new_total", "budget_impact", "cumulative_budget_impact",
@@ -212,23 +212,29 @@ gs_write_study <- function(study) {
 #' Safe to call every startup — only writes if expected columns are absent.
 #' Unlike the studies sheet, this tab may not exist yet at all, so a failed
 #' read (missing tab) is treated the same as a column mismatch: (re)create it.
+#' `sheet_write()` replaces a sheet's entire contents, so when columns are
+#' missing (e.g. a new column added to BIA_COLS) any existing rows are read
+#' back first and carried over — new columns backfill as NA — instead of
+#' being silently wiped.
 gs_ensure_bia_headers <- function() {
-  existing_cols <- tryCatch(
-    suppressMessages(
-      names(googlesheets4::read_sheet(STUDIES_ID, sheet = BIA_SHEET, n_max = 0))
-    ),
+  existing <- tryCatch(
+    suppressMessages(googlesheets4::read_sheet(STUDIES_ID, sheet = BIA_SHEET, col_types = "c")),
     error = function(e) NULL
   )
 
-  if (is.null(existing_cols) || !all(BIA_COLS %in% existing_cols)) {
-    empty_df <- setNames(
-      data.frame(matrix(ncol = length(BIA_COLS), nrow = 0L),
+  if (is.null(existing) || !all(BIA_COLS %in% names(existing))) {
+    n_keep <- if (is.null(existing)) 0L else nrow(existing)
+    full_df <- setNames(
+      data.frame(matrix(NA_character_, ncol = length(BIA_COLS), nrow = n_keep),
                  stringsAsFactors = FALSE),
       BIA_COLS
     )
+    if (n_keep > 0L) {
+      for (col in intersect(names(existing), BIA_COLS)) full_df[[col]] <- existing[[col]]
+    }
     tryCatch({
-      googlesheets4::sheet_write(empty_df, ss = STUDIES_ID, sheet = BIA_SHEET)
-      message("[gs] Budget Impact Runs sheet ready.")
+      googlesheets4::sheet_write(full_df, ss = STUDIES_ID, sheet = BIA_SHEET)
+      message("[gs] Budget Impact Runs sheet ready (", n_keep, " row(s) preserved).")
     }, error = function(e) {
       warning("[gs] Could not ensure BIA headers: ", e$message)
     })

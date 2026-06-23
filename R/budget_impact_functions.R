@@ -14,7 +14,8 @@
 #' @param target_population Numeric scalar, constant across the horizon.
 #' @param uptake_ramp Data frame: strategy (chr, non-reference strategies),
 #'   one column per year named year_1, year_2, ... — values are shares in
-#'   [0, 1]. Missing strategies/years default to 1 (100%).
+#'   [0, 1]. Missing strategies/years default to an even split across
+#'   non-reference strategies (so the reference's residual share is 0).
 #' @param time_horizon_years Integer, number of years (1-5).
 #' @return List:
 #'   by_year          — df: year, reference_total, new_total, budget_impact, cumulative_budget_impact
@@ -30,14 +31,16 @@ compute_budget_impact_data <- function(strategies_df, target_population,
   by_year <- list()
   cumulative <- 0
 
+  even_share <- 1 / nrow(non_ref)
+
   for (y in seq_len(time_horizon_years)) {
     ycol <- paste0("year_", y)
     shares <- setNames(
-      if (ycol %in% names(uptake_ramp)) uptake_ramp[[ycol]] else rep(1, nrow(non_ref)),
+      if (ycol %in% names(uptake_ramp)) uptake_ramp[[ycol]] else rep(even_share, nrow(non_ref)),
       uptake_ramp$strategy
     )
     shares <- shares[non_ref$strategy]
-    shares[is.na(shares)] <- 1
+    shares[is.na(shares)] <- even_share
     shares <- pmax(shares, 0)
     ref_share <- 1 - sum(shares)
 

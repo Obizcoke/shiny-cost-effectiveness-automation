@@ -621,6 +621,7 @@ mod_synthesis_server <- function(id, factors, interventions,
         return()
       }
 
+      intv    <- input$selected_intervention
       obs     <- outcome_by_strategy()
       sent_df <- do.call(rbind, lapply(strategies, function(strat) {
         p <- pd[[strat]]
@@ -631,6 +632,7 @@ mod_synthesis_server <- function(id, factors, interventions,
           source          = "literature",
           n_studies       = p$n,
           outcome_measure = obs[[strat]] %||% NA_character_,
+          intervention    = intv %||% NA_character_,
           stringsAsFactors = FALSE
         )
       }))

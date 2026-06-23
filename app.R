@@ -189,7 +189,20 @@ ui <- navbarPage(
             tags$h5("Analysis"),
             tags$p("Review and edit the strategy table, set the outcome measure and
                     cost-effectiveness threshold, then run. Results open in the side
-                    drawer: ICER table, CE plane, tornado, CEAC, and price threshold.")
+                    drawer: ICER table, CE plane, tornado, PSA scatter, CEAC, and
+                    price threshold.")
+          )
+        ),
+        div(class = "help-step",
+          div(class = "help-step-num", "4"),
+          div(class = "help-step-body",
+            tags$h5("Budget Impact"),
+            tags$p("Set a target population and time horizon, then edit each
+                    non-reference strategy's uptake share by year (defaults to an
+                    even split across non-reference strategies). Shows the
+                    year-by-year and cumulative cost difference versus keeping the
+                    whole population on the reference strategy; runs can be saved
+                    for later reference.")
           )
         )
       ),
@@ -248,13 +261,19 @@ ui <- navbarPage(
           ),
           div(class = "help-kv",
             tags$dt("CE plane"),
-            tags$dd("Deterministic point + 1,000 PSA draws per strategy plotted on
-                     incremental cost vs. incremental effect axes.")
+            tags$dd("Each strategy's deterministic incremental cost vs. incremental
+                     effect, relative to the reference strategy.")
           ),
           div(class = "help-kv",
             tags$dt("Tornado"),
             tags$dd("One-way sensitivity: each parameter varied ±20%; bars show the
                      resulting ICER range, sorted by impact.")
+          ),
+          div(class = "help-kv",
+            tags$dt("PSA scatter"),
+            tags$dd("1,000 probabilistic draws per strategy on the same incremental
+                     cost/effect axes as the CE plane, with the share of draws
+                     falling below the cost-effectiveness threshold.")
           ),
           div(class = "help-kv",
             tags$dt("CEAC"),
@@ -265,6 +284,12 @@ ui <- navbarPage(
             tags$dt("Price threshold"),
             tags$dd("Maximum unit cost at which a strategy remains cost-effective
                      (break-even price) and headroom above current cost.")
+          ),
+          div(class = "help-kv",
+            tags$dt("Budget impact"),
+            tags$dd("Year-by-year and cumulative cost difference between the
+                     reference strategy and an assumed uptake trajectory across
+                     strategies, for a manually entered target population.")
           ),
           div(class = "help-kv",
             tags$dt("PPP vs exchange rate"),
@@ -295,11 +320,16 @@ ui <- navbarPage(
             ),
             tags$tr(
               tags$td("SHA Level 4"),
-              tags$td("KES 2,800"),
+              tags$td("KES 3,360"),
               tags$td("per day averted")
             ),
             tags$tr(
-              tags$td("SHA Level 5–6"),
+              tags$td("SHA Level 5"),
+              tags$td("KES 3,920"),
+              tags$td("per day averted")
+            ),
+            tags$tr(
+              tags$td("SHA Level 6"),
               tags$td("KES 4,480"),
               tags$td("per day averted")
             )
