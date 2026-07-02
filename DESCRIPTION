@@ -26,7 +26,6 @@ Imports:
     rvest,
     httr2,
     googlesheets4,
-    countrycode,
-
+    countrycode
 Suggests:
     testthat (>= 3.0.0)
