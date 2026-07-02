@@ -25,6 +25,8 @@ Imports:
     wbstats,
     rvest,
     httr2,
-    countrycode
+    googlesheets4,
+    countrycode,
+
 Suggests:
     testthat (>= 3.0.0)
