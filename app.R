@@ -65,34 +65,49 @@ FACTORS <- load_factors()
 
 ui <- navbarPage(
   id    = "main_nav",
-  title = "Cost-Effectiveness Analysis",
+  title = tagList(
+    tags$img(src = "cema-logo.png", height = 26,
+             style = "margin-right: 10px; vertical-align: middle;"),
+    "Cost-Effectiveness Analysis"
+  ),
   theme = bslib::bs_theme(version = 4, primary = "#27AAE1", bg = "#ffffff", fg = "#0a0a0a") |>
     bslib::bs_add_rules("
+      /* CEMA house style: solid brand-blue nav bar with pill-highlighted
+         tabs, matching the malaria-survey dashboard's header/nav look. */
       .navbar, .navbar.navbar-default, .navbar.navbar-light, .navbar.navbar-dark {
-        background-color: #ffffff !important;
+        background-color: #27AAE1 !important;
         background-image: none !important;
-        border-bottom: 2px solid #0a0a0a !important;
+        border-bottom: 3px solid #1A88B8 !important;
         box-shadow: none !important;
       }
-      .navbar-brand { color: #0a0a0a !important; font-weight: 700 !important; }
+      .navbar-brand {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        display: flex !important;
+        align-items: center;
+      }
       .navbar-nav > li > a, .navbar-nav .nav-link {
-        color: #737373 !important;
+        color: #ffffff !important;
+        border-radius: 6px;
+        margin: 6px 3px;
+        padding: 8px 14px !important;
+        transition: background 0.2s ease-in-out;
       }
       .navbar-nav > li.active > a,
       .navbar-nav > li.active > a:hover,
       .navbar-nav > li.active > a:focus,
       .navbar-nav .nav-link.active {
-        color: #0a0a0a !important;
-        background: transparent !important;
-        border-bottom: 2px solid #27AAE1 !important;
+        color: #ffffff !important;
+        background: #1A88B8 !important;
+        border-bottom: none !important;
         font-weight: 600 !important;
       }
       .navbar-nav > li > a:hover, .navbar-nav .nav-link:hover {
-        color: #0a0a0a !important;
-        background: transparent !important;
+        color: #ffffff !important;
+        background: #1A88B8 !important;
       }
-      .navbar-toggle .icon-bar { background-color: #0a0a0a !important; }
-      .navbar-toggle { border-color: #e5e5e5 !important; }
+      .navbar-toggle .icon-bar { background-color: #ffffff !important; }
+      .navbar-toggle { border-color: rgba(255,255,255,0.3) !important; }
     "),
   header = tags$head(
     tags$link(rel = "stylesheet", href = "styles.css"),
@@ -100,30 +115,30 @@ ui <- navbarPage(
   ),
   footer = mod_results_ui("analysis_results"),
 
-  tabPanel("Transform",
+  tabPanel("Transform", icon = icon("wand-magic-sparkles"),
     mod_rcema_transform_ui("rcema_transform")
   ),
 
-  tabPanel("Evidence Synthesis",
+  tabPanel("Evidence Synthesis", icon = icon("flask"),
     mod_synthesis_ui("synthesis")
   ),
 
-  tabPanel("Analysis",
+  tabPanel("Analysis", icon = icon("chart-line"),
     mod_input_ui("icer_calculation")
   ),
 
-  tabPanel("Budget Impact",
+  tabPanel("Budget Impact", icon = icon("sack-dollar"),
     mod_budget_impact_ui("budget_impact")
   ),
 
-  tabPanel("Methods",
+  tabPanel("Methods", icon = icon("book"),
     tags$iframe(
       src   = "methods.html",
       style = "width:100%; height: calc(100vh - 52px); border: none; display: block;"
     )
   ),
 
-  tabPanel("Help",
+  tabPanel("Help", icon = icon("circle-question"),
     tags$style(HTML("
       .help-wrap { max-width: 860px; margin: 0 auto; padding: 28px 24px 48px; }
       .help-section { margin-bottom: 36px; }
